@@ -72,6 +72,11 @@ private:
 }
 
 /** 
- * An ICSEntry is an algebraic type that can be a valid root calendar
+ * An ICSResult returns either the root calendar or an error.
  */
-public alias ICSEntry = SumType!(Calendar, ICSError);
+public alias ICSResult = SumType!(Calendar, ICSError);
+
+/** 
+ * An ICSEntry is an algebraic type that can be any valid type
+ */
+public alias ICSEntry = SumType!(Calendar, Event, Todo, ICSError);

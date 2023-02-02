@@ -15,7 +15,7 @@
 
 module ics.parser;
 
-public import ics : ICSEntry, ICSError, icsID;
+public import ics : ICSResult, ICSError, icsID;
 public import std.sumtype;
 import ics.calendar;
 import ics.event;
@@ -60,9 +60,9 @@ private enum Context
  *
  * Params:
  *   filepath = path to the file to parse
- * Returns: A Valid calendar ICSEntry or an ICSError
+ * Returns: A Valid calendar ICSResult or an ICSError
  */
-public ICSEntry parseICS(string filepath) @trusted
+public ICSResult parseICS(string filepath) @trusted
 {
     auto fi = File(filepath, "r");
     scope (exit)
@@ -82,13 +82,13 @@ public ICSEntry parseICS(string filepath) @trusted
     {
         if (line.length < minLineLength)
         {
-            return ICSEntry(ICSError("Line length too short"));
+            return ICSResult(ICSError("Line length too short"));
         }
 
         immutable colonIndex = line.indexOf(keyvalSeparator);
         if (colonIndex < 1)
         {
-            return ICSEntry(ICSError("Line doesn't include key/value mapping"));
+            return ICSResult(ICSError("Line doesn't include key/value mapping"));
         }
 
         const key = line[0 .. colonIndex];
@@ -112,7 +112,7 @@ public ICSEntry parseICS(string filepath) @trusted
                 context = Context.Todo;
                 break;
             default:
-                return ICSEntry(ICSError(format!"Unhandled scope: %s"(value)));
+                return ICSResult(ICSError(format!"Unhandled scope: %s"(value)));
             }
             break;
         case "END":
@@ -126,7 +126,7 @@ public ICSEntry parseICS(string filepath) @trusted
         }
     }
 
-    return ICSEntry(ICSError("unparsed"));
+    return ICSResult(ICSError("unparsed"));
 }
 
 /** 
