@@ -198,6 +198,7 @@ key_check:
                     mixin("nodeStruct." ~ field ~ " = () @trusted { return (cast(string)value);}();");
                     break key_check;
                 }
+                /* Set a systime value */
                 else static if (is(fieldType == SysTime))
                 {
                     mixin("nodeStruct." ~ field ~ " = SysTime.fromISOString(value);");
