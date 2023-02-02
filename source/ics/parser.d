@@ -15,14 +15,15 @@
 
 module ics.parser;
 
-public import ics : ICSResult, ICSError, icsID;
+public import ics : ICSResult, ICSEntry, ICSError, icsID;
 public import std.sumtype;
 import ics.calendar;
 import ics.event;
 import ics.todo;
 import std.stdio : File, KeepTerminator, writefln;
 import std.string : indexOf, format;
-import std.traits : getUDAs, FieldNameTuple;
+import std.traits : getUDAs, FieldNameTuple, OriginalType;
+import std.datetime.systime;
 
 /** 
  * Separators and \r\n
@@ -73,6 +74,8 @@ public ICSResult parseICS(string filepath) @trusted
     auto context = Context.None;
     auto prevContext = Context.None;
 
+    ICSEntry currentNode = ICSEntry(ICSError("unset"));
+
     /**
      * Walk every line by the \r\n ending
      *
@@ -104,12 +107,15 @@ public ICSResult parseICS(string filepath) @trusted
             {
             case "VCALENDAR":
                 context = Context.Calendar;
+                currentNode = ICSEntry(Calendar());
                 break;
             case "VEVENT":
                 context = Context.Event;
+                currentNode = ICSEntry(Event());
                 break;
             case "VTODO":
                 context = Context.Todo;
+                currentNode = ICSEntry(Todo());
                 break;
             default:
                 return ICSResult(ICSError(format!"Unhandled scope: %s"(value)));
@@ -121,7 +127,7 @@ public ICSResult parseICS(string filepath) @trusted
             writefln!"End scope: %s"(value);
             break;
         default:
-            handleEvent(context, key, value);
+            handleEvent(context, currentNode, key, value);
             break;
         }
     }
@@ -134,22 +140,23 @@ public ICSResult parseICS(string filepath) @trusted
  *
  * Params:
  *   context = Current processing context
+ *   currentEntry = The currently processed entry
  *   key = The key to set
  *   value = The provided value
  */
 pragma(inline, true) static private void handleEvent(Context context,
-        const(char[]) key, const(char[]) value) @safe
+        ref ICSEntry currentEntry, const(char[]) key, const(char[]) value) @safe
 {
     final switch (context)
     {
     case Context.Calendar:
-        handleTypedEvent!Calendar(key, value);
+        handleTypedEvent!Calendar(currentEntry, key, value);
         break;
     case Context.Event:
-        handleTypedEvent!Event(key, value);
+        handleTypedEvent!Event(currentEntry, key, value);
         break;
     case Context.Todo:
-        handleTypedEvent!Todo(key, value);
+        handleTypedEvent!Todo(currentEntry, key, value);
         break;
     case Context.None:
         throw new Exception("breakdown");
@@ -161,12 +168,16 @@ pragma(inline, true) static private void handleEvent(Context context,
  *
  * Params:
  *   T = Type of struct
+ *   currentEntry = The currently processed entry
  *   key = Key to find a icsID for
  *   value = Value to set on the struct
  */
-static private void handleTypedEvent(T)(const(char[]) key, const(char[]) value) @safe
-        if (is(T == struct))
+static private void handleTypedEvent(T)(ref ICSEntry currentEntry,
+        const(char[]) key, const(char[]) value) @safe if (is(T == struct))
 {
+    /* Big bada boom */
+    T nodeStruct = currentEntry.tryMatch!((T val) => val);
+
 key_check:
     switch (key)
     {
@@ -178,16 +189,37 @@ key_check:
                 mixin("enum caseID = fieldIDs[0].identifier;");
                 static assert(fieldIDs.length > 0,
                         "Invalid field due to missing icsID: " ~ T.stringof ~ "#" ~ field);
+                mixin("alias fieldType = OriginalType!(typeof(nodeStruct." ~ field ~ "));");
 
     case caseID:
-                writefln!"matching key %s"(key);
-                break key_check;
+                /* Set from a string */
+                static if (is(fieldType == string))
+                {
+                    mixin("nodeStruct." ~ field ~ " = () @trusted { return (cast(string)value);}();");
+                    break key_check;
+                }
+                else static if (is(fieldType == SysTime))
+                {
+                    mixin("nodeStruct." ~ field ~ " = SysTime.fromISOString(value);");
+                    break key_check;
+                }
+                else
+                {
+                    static assert(0,
+                            "Unsupported type '" ~ fieldType.stringof ~ "' in "
+                            ~ T.stringof ~ "#" ~ field);
+                }
             }
         }
     default:
         writefln!"Unknown: %s.%s"(T.stringof, key);
         break;
     }
+
+    writefln!"Struct now looks like: %s"(nodeStruct);
+
+    /* Stash it back again */
+    () @trusted { currentEntry = nodeStruct; }();
 }
 
 @safe @("Test the event parsing")
