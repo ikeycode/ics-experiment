@@ -275,5 +275,12 @@ unittest
 unittest
 {
     auto entry = parseICS("data/todo.ics");
-    auto cal = entry.tryMatch!((Calendar c) => c);
+    entry.match!((Calendar c) {
+        assert(c.todos.length == 1, "Should have 1 todo");
+        auto todo = c.todos[0];
+        assert(todo.summary == "Submit Income Taxes", "Wrong summary");
+        assert(todo.dateTimeStamp.year == 1998, "Lost in space");
+        assert(todo.sequence == 2, "Invalid sequence");
+        writefln!"Got a calendar: %s"(c);
+    }, (ICSError e) { assert(0, e.message); });
 }
