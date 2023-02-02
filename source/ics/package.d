@@ -15,6 +15,7 @@
 
 module ics;
 
+public import ics.calendar;
 public import ics.event;
 public import ics.todo;
 public import std.sumtype;
@@ -61,4 +62,4 @@ private:
 /** 
  * An ICSEntry is an algebraic type that can be a valid entry or an error.
  */
-public alias ICSEntry = SumType!(Event, Todo, ICSError);
+public alias ICSEntry = SumType!(Calendar, Event, Todo, ICSError);
