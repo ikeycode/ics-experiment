@@ -72,6 +72,6 @@ private:
 }
 
 /** 
- * An ICSEntry is an algebraic type that can be a valid entry or an error.
+ * An ICSEntry is an algebraic type that can be a valid root calendar
  */
-public alias ICSEntry = SumType!(Calendar, Event, Todo, ICSError);
+public alias ICSEntry = SumType!(Calendar, ICSError);
