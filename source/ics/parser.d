@@ -187,37 +187,41 @@ key_check:
             {
                 /* Grab the UDA (icsID) and generate case 'identifier' for it */
                 mixin("enum fieldIDs = getUDAs!(T." ~ field ~ ", icsID);");
-                mixin("enum caseID = fieldIDs[0].identifier;");
-                static assert(fieldIDs.length > 0,
-                        "Invalid field due to missing icsID: " ~ T.stringof ~ "#" ~ field);
-                mixin("alias fieldType = OriginalType!(typeof(nodeStruct." ~ field ~ "));");
+                static if (fieldIDs.length > 0)
+                {
+                    mixin("enum caseID = fieldIDs[0].identifier;");
+
+                    mixin("alias fieldType = OriginalType!(typeof(nodeStruct." ~ field ~ "));");
 
     case caseID:
-                /* Set from a string */
-                static if (is(fieldType == string))
-                {
-                    mixin("nodeStruct." ~ field ~ " = () @trusted { return (cast(string)value);}();");
-                    break key_check;
-                }
-                /* Set a systime value */
+                    /* Set from a string */
+                    static if (is(fieldType == string))
+                    {
+                        mixin(
+                                "nodeStruct." ~ field
+                                ~ " = () @trusted { return (cast(string)value);}();");
+                        break key_check;
+                    }
+                    /* Set a systime value */
                 else static if (is(fieldType == SysTime))
-                {
-                    mixin("nodeStruct." ~ field ~ " = SysTime.fromISOString(value);");
-                    break key_check;
-                }
-                /* Set a numerical value */
+                    {
+                        mixin("nodeStruct." ~ field ~ " = SysTime.fromISOString(value);");
+                        break key_check;
+                    }
+                    /* Set a numerical value */
                 else static if (!isBoolean!fieldType && isNumeric!fieldType
-                        && !isFloatingPoint!fieldType)
-                {
-                    fieldType val = to!fieldType(value);
-                    /* TODO: Check if the val is valid */
-                    mixin("nodeStruct." ~ field ~ " = val;");
-                }
-                else
-                {
-                    static assert(0,
-                            "Unsupported type '" ~ fieldType.stringof ~ "' in "
-                            ~ T.stringof ~ "#" ~ field);
+                            && !isFloatingPoint!fieldType)
+                    {
+                        fieldType val = to!fieldType(value);
+                        /* TODO: Check if the val is valid */
+                        mixin("nodeStruct." ~ field ~ " = val;");
+                    }
+                    else
+                    {
+                        static assert(0,
+                                "Unsupported type '" ~ fieldType.stringof
+                                ~ "' in " ~ T.stringof ~ "#" ~ field);
+                    }
                 }
             }
         }
