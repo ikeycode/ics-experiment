@@ -5,22 +5,20 @@
  */
 
 /**
- * app
+ * ics.event
  *
- * Main binary for the ics-experiment
+ * Support for ICS events
  *
  * Authors: Copyright © 2020-2023 Ikey Doherty
  * License: Zlib
  */
 
-module app;
+module ics.event;
 
-import ics;
-
-/**
- * Main entry point into ics-experiment
+/** 
+ * Encapsultes an ICS Event
  */
-void main() @safe
+public struct Event
 {
 
 }

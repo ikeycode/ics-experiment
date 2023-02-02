@@ -5,22 +5,20 @@
  */
 
 /**
- * app
+ * ics.todo
  *
- * Main binary for the ics-experiment
+ * Support for ICS TODOs
  *
  * Authors: Copyright © 2020-2023 Ikey Doherty
  * License: Zlib
  */
 
-module app;
+module ics.todo;
 
-import ics;
-
-/**
- * Main entry point into ics-experiment
+/** 
+ * Encapsulates an ICS TODO
  */
-void main() @safe
+public struct Todo
 {
 
 }
