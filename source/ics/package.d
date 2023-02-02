@@ -18,6 +18,7 @@ module ics;
 public import ics.calendar;
 public import ics.event;
 public import ics.todo;
+public import ics.parser;
 public import std.sumtype;
 
 /** 
