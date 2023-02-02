@@ -20,6 +20,7 @@ public import std.sumtype;
 import ics.calendar;
 import ics.event;
 import std.stdio : File, KeepTerminator, writefln;
+import std.string : indexOf, format;
 
 /** 
  * Separators and \r\n
@@ -30,6 +31,23 @@ private static const minLineLength = 4;
  * Every line requires a proper format ending
  */
 private static const requiredLineEnding = "\r\n";
+
+/**
+ * Used to separate all key/vals except ORGANIZER, which
+ * needs further processing
+ */
+private static const keyvalSeparator = ':';
+
+/**
+ * The current context in processing
+ */
+private enum Context
+{
+    None, /* Unvisited */
+    Calendar,
+    Event,
+    Todo
+}
 
 /** 
  * Parse an ICS file
@@ -50,15 +68,76 @@ public ICSEntry parseICS(string filepath) @trusted
         fi.close();
     }
 
+    auto context = Context.None;
+    auto prevContext = Context.None;
+
+    /**
+     * Walk every line by the \r\n ending
+     *
+     * TODO: Support multiline descriptions indent by space
+     */
     foreach (ref line; fi.byLine(KeepTerminator.no, requiredLineEnding))
     {
         if (line.length < minLineLength)
         {
             return ICSEntry(ICSError("Line length too short"));
         }
-        writefln!"__debug: Processing: %s"(line);
+
+        immutable colonIndex = line.indexOf(keyvalSeparator);
+        if (colonIndex < 1)
+        {
+            return ICSEntry(ICSError("Line doesn't include key/value mapping"));
+        }
+
+        const key = line[0 .. colonIndex];
+        const value = line[colonIndex + 1 .. $];
+
+        switch (key)
+        {
+        case "BEGIN":
+            /* Set the current scope */
+            writefln!"Begin scope: %s"(value);
+            prevContext = context;
+            switch (value)
+            {
+            case "VCALENDAR":
+                context = Context.Calendar;
+                break;
+            case "VEVENT":
+                context = Context.Event;
+                break;
+            case "VTODO":
+                context = Context.Todo;
+                break;
+            default:
+                return ICSEntry(ICSError(format!"Unhandled scope: %s"(value)));
+            }
+            break;
+        case "END":
+            context = prevContext;
+            prevContext = Context.None;
+            writefln!"End scope: %s"(value);
+            break;
+        default:
+            writefln!"Unhandled: %s"(value);
+            break;
+        }
     }
+
     return ICSEntry(ICSError("unparsed"));
+}
+
+/** 
+ * Handle processing of key/value pair
+ *
+ * Params:
+ *   context = Current processing context
+ *   key = The key to set
+ *   value = The provided value
+ */
+private void handleEvent(Context context, scope const ref string key, scope const ref string value) @safe
+{
+
 }
 
 @safe @("Test the event parsing")
