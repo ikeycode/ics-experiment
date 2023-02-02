@@ -13,3 +13,4 @@ ics-experiment-test-*
 *.o
 *.obj
 *.lst
+dub.selections.json
