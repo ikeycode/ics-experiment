@@ -16,6 +16,7 @@
 module ics.event;
 
 public import ics : icsID;
+public import ics.calendar : Calendar;
 public import std.datetime.systime;
 
 /** 
@@ -47,4 +48,8 @@ public struct Event
      * Description of the event
      */
     @icsID("SUMMARY") string summary;
+
+package:
+
+    Calendar* _parent;
 }

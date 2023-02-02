@@ -77,6 +77,8 @@ public ICSResult parseICS(string filepath) @trusted
 
     ICSEntry currentNode = ICSEntry(ICSError("unset"));
 
+    Calendar rootCalendar;
+
     /**
      * Walk every line by the \r\n ending
      *
@@ -104,28 +106,49 @@ public ICSResult parseICS(string filepath) @trusted
             /* Set the current scope */
             writefln!"Begin scope: %s"(value);
             prevContext = context;
+            /* Grab the calendar back */
+            if (prevContext == Context.Calendar)
+            {
+                rootCalendar = currentNode.tryMatch!((Calendar c) => c);
+            }
             switch (value)
             {
             case "VCALENDAR":
                 context = Context.Calendar;
-                currentNode = ICSEntry(Calendar());
+                currentNode = ICSEntry(rootCalendar);
                 break;
             case "VEVENT":
                 context = Context.Event;
-                currentNode = ICSEntry(Event());
+                auto event = Event();
+                event._parent = &rootCalendar;
+                currentNode = ICSEntry(event);
                 break;
             case "VTODO":
                 context = Context.Todo;
-                currentNode = ICSEntry(Todo());
+                auto todo = Todo();
+                todo._parent = &rootCalendar;
+                currentNode = ICSEntry(todo);
                 break;
             default:
                 return ICSResult(ICSError(format!"Unhandled scope: %s"(value)));
             }
             break;
         case "END":
+            /* TODO: For nested, go up the parent scope */
+            switch (context)
+            {
+            case Context.Todo:
+                rootCalendar.todos ~= currentNode.tryMatch!((Todo t) => t);
+                break;
+            case Context.Event:
+                rootCalendar.events ~= currentNode.tryMatch!((Event t) => t);
+                break;
+            default:
+                break;
+            }
+
             context = prevContext;
             prevContext = Context.None;
-            writefln!"End scope: %s"(value);
             break;
         default:
             handleEvent(context, currentNode, key, value);
@@ -133,7 +156,7 @@ public ICSResult parseICS(string filepath) @trusted
         }
     }
 
-    return ICSResult(ICSError("unparsed"));
+    return ICSResult(rootCalendar);
 }
 
 /** 
@@ -199,7 +222,7 @@ key_check:
                     {
                         mixin(
                                 "nodeStruct." ~ field
-                                ~ " = () @trusted { return (cast(string)value);}();");
+                                ~ " = () @trusted { return (cast(string)value.dup);}();");
                         break key_check;
                     }
                     /* Set a systime value */
@@ -230,8 +253,6 @@ key_check:
         break;
     }
 
-    writefln!"Struct now looks like: %s"(nodeStruct);
-
     /* Stash it back again */
     () @trusted { currentEntry = nodeStruct; }();
 }
@@ -240,7 +261,9 @@ key_check:
 unittest
 {
     auto entry = parseICS("data/event.ics");
-    entry.match!((Calendar _) {}, (ICSError e) { assert(0, e.message); });
+    entry.match!((Calendar c) { writefln!"Got a calendar: %s"(c); }, (ICSError e) {
+        assert(0, e.message);
+    });
 }
 
 @safe @("Test the TODO parsing")

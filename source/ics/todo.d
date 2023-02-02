@@ -16,6 +16,7 @@
 module ics.todo;
 
 public import ics : icsID;
+public import ics.calendar : Calendar;
 public import std.datetime.systime;
 public import std.stdint : uint64_t;
 
@@ -54,4 +55,8 @@ public struct Todo
      * Contents of the TODO
      */
     @icsID("SUMMARY") string summary;
+
+package:
+
+    Calendar* _parent;
 }

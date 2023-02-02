@@ -17,6 +17,9 @@ module ics.calendar;
 
 public import ics : icsID;
 
+public import ics.event : Event;
+public import ics.todo : Todo;
+
 /** 
  * Encapsultes an ICS Calendar
  */
@@ -31,4 +34,14 @@ public struct Calendar
      * Product ID used to generate the calendar
      */
     @icsID("PRODID") string productID;
+
+    /** 
+     * Any number of owned events
+     */
+    Event[] events;
+
+    /** 
+     * Any number of todos
+     */
+    Todo[] todos;
 }
