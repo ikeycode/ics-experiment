@@ -21,6 +21,17 @@ public import ics.todo;
 public import std.sumtype;
 
 /** 
+ * User-defined attribute for encoding of keys etc.
+ */
+public struct icsID
+{
+    /** 
+     * The identifier according to the format
+     */
+    string identifier;
+}
+
+/** 
  * Encapsulates an ICS parsing error
  */
 public struct ICSError

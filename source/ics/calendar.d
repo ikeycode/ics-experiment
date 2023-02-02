@@ -15,10 +15,20 @@
 
 module ics.calendar;
 
+public import ics : icsID;
+
 /** 
  * Encapsultes an ICS Calendar
  */
 public struct Calendar
 {
+    /** 
+     * Calendar format version
+     */
+    @icsID("VERSION") string versionIdentifier;
 
+    /**
+     * Product ID used to generate the calendar
+     */
+    @icsID("PRODID") string productID;
 }
