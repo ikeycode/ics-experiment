@@ -261,9 +261,13 @@ key_check:
 unittest
 {
     auto entry = parseICS("data/event.ics");
-    entry.match!((Calendar c) { writefln!"Got a calendar: %s"(c); }, (ICSError e) {
-        assert(0, e.message);
-    });
+    entry.match!((Calendar c) {
+        assert(c.events.length == 1, "Should have 1 event");
+        auto event = c.events[0];
+        assert(event.summary == "Bastille Day Party", "Wrong summary");
+        assert(event.dateTimeStamp.year == 1997, "Lost in space");
+        writefln!"Got a calendar: %s"(c);
+    }, (ICSError e) { assert(0, e.message); });
 }
 
 @safe @("Test the TODO parsing")
