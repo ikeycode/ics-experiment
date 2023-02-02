@@ -3,9 +3,6 @@
 		"Ikey Doherty"
 	],
 	"copyright": "Copyright © 2023, Ikey Doherty",
-	"dependencies": {
-		"vibe-d": "~>0.9"
-	},
 	"description": "ICS experiments",
 	"license": "Zlib",
 	"name": "ics-experiment"
