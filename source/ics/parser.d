@@ -22,8 +22,9 @@ import ics.event;
 import ics.todo;
 import std.stdio : File, KeepTerminator, writefln;
 import std.string : indexOf, format;
-import std.traits : getUDAs, FieldNameTuple, OriginalType;
+import std.traits : getUDAs, FieldNameTuple, OriginalType, isBoolean, isNumeric, isFloatingPoint;
 import std.datetime.systime;
+import std.conv : to;
 
 /** 
  * Separators and \r\n
@@ -203,6 +204,14 @@ key_check:
                 {
                     mixin("nodeStruct." ~ field ~ " = SysTime.fromISOString(value);");
                     break key_check;
+                }
+                /* Set a numerical value */
+                else static if (!isBoolean!fieldType && isNumeric!fieldType
+                        && !isFloatingPoint!fieldType)
+                {
+                    fieldType val = to!fieldType(value);
+                    /* TODO: Check if the val is valid */
+                    mixin("nodeStruct." ~ field ~ " = val;");
                 }
                 else
                 {
