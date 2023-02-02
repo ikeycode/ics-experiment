@@ -17,6 +17,7 @@ module ics.todo;
 
 public import ics : icsID;
 public import std.datetime.systime;
+public import std.stdint : uint64_t;
 
 /** 
  * Encapsulates an ICS TODO
@@ -27,6 +28,11 @@ public struct Todo
      * Unique identifier for this TODO
      */
     @icsID("UID") string uid;
+
+    /** 
+     * How many times has this been modified?
+     */
+    @icsID("SEQUENCE") uint64_t sequence;
 
     /** 
      * Creation date/time stamp
