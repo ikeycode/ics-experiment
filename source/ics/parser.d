@@ -238,6 +238,7 @@ key_check:
                         fieldType val = to!fieldType(value);
                         /* TODO: Check if the val is valid */
                         mixin("nodeStruct." ~ field ~ " = val;");
+                        break key_check;
                     }
                     else
                     {
