@@ -19,8 +19,10 @@ public import ics : ICSEntry, ICSError, icsID;
 public import std.sumtype;
 import ics.calendar;
 import ics.event;
+import ics.todo;
 import std.stdio : File, KeepTerminator, writefln;
 import std.string : indexOf, format;
+import std.traits : getUDAs, FieldNameTuple;
 
 /** 
  * Separators and \r\n
@@ -119,7 +121,7 @@ public ICSEntry parseICS(string filepath) @trusted
             writefln!"End scope: %s"(value);
             break;
         default:
-            writefln!"Unhandled: %s"(value);
+            handleEvent(context, key, value);
             break;
         }
     }
@@ -135,9 +137,57 @@ public ICSEntry parseICS(string filepath) @trusted
  *   key = The key to set
  *   value = The provided value
  */
-private void handleEvent(Context context, scope const ref string key, scope const ref string value) @safe
+pragma(inline, true) static private void handleEvent(Context context,
+        const(char[]) key, const(char[]) value) @safe
 {
+    final switch (context)
+    {
+    case Context.Calendar:
+        handleTypedEvent!Calendar(key, value);
+        break;
+    case Context.Event:
+        handleTypedEvent!Event(key, value);
+        break;
+    case Context.Todo:
+        handleTypedEvent!Todo(key, value);
+        break;
+    case Context.None:
+        throw new Exception("breakdown");
+    }
+}
 
+/** 
+ * Handle event deserialisation
+ *
+ * Params:
+ *   T = Type of struct
+ *   key = Key to find a icsID for
+ *   value = Value to set on the struct
+ */
+static private void handleTypedEvent(T)(const(char[]) key, const(char[]) value) @safe
+        if (is(T == struct))
+{
+key_check:
+    switch (key)
+    {
+        static foreach (field; FieldNameTuple!T)
+        {
+            {
+                /* Grab the UDA (icsID) and generate case 'identifier' for it */
+                mixin("enum fieldIDs = getUDAs!(T." ~ field ~ ", icsID);");
+                mixin("enum caseID = fieldIDs[0].identifier;");
+                static assert(fieldIDs.length > 0,
+                        "Invalid field due to missing icsID: " ~ T.stringof ~ "#" ~ field);
+
+    case caseID:
+                writefln!"matching key %s"(key);
+                break key_check;
+            }
+        }
+    default:
+        writefln!"Unknown: %s.%s"(T.stringof, key);
+        break;
+    }
 }
 
 @safe @("Test the event parsing")
